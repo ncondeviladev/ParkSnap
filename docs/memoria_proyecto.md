@@ -10,6 +10,7 @@ Este proyecto ha sido desarrollado con el objetivo de consolidar y demostrar los
 - **Gestión de Cámara:** Uso del hardware del dispositivo para la captura de referencias visuales del entorno.
 - **Persistencia de Datos:** Sistema de almacenamiento local para garantizar que la información de la sesión se mantenga disponible incluso si la aplicación se cierra.
 - **Arquitectura Provider:** Implementación del patrón Provider para una gestión eficiente y desacoplada del estado de la aplicación.
+- **Uso de Sensores:** Como mejora sobre la versión base, se ha implementado en última instancia la orientación por brújula en el mapa, cumpliendo con el requisito de uso de sensores del dispositivo.
 
 ## 2. Diseño y Funcionalidad
 
@@ -43,6 +44,8 @@ Esta zona central cambia completamente según el estado del aparcamiento:
     - **Info:** Se muestran los detalles de la hora de entrada y la dirección.
     - **Acción Rápida:** Aparece el botón "Liberar Plaza" para borrar el registro rápidamente.
 
+- Mockup preliminar:
+
 ![Mockup Principal](../assets/images/home_ui_v6.png)
 
 ### Flujo de Aparcamiento
@@ -74,40 +77,34 @@ graph TD
     subgraph Sistema_ParkSnap [Sistema ParkSnap]
         direction TB
 
-        %% --- Casos de Uso Principales (Nivel 1) ---
+        %% --- Casos de Uso Principales ---
         UC_Aparcar(["<b>Aparcar Coche</b>"])
         UC_Encontrar(["<b>Encontrar Coche</b>"])
-        UC_Liberar(["<b>Liberar Plaza</b>"])
         UC_Historial(["<b>Consultar Historial</b>"])
 
-        %% --- Sub-Funciones / Detalles (Nivel 2) ---
-        Detail_Guardar(["Guardar Ubicación"])
-        Detail_Foto(["Tomar Fotos"])
+        %% --- Extensiones y Opciones ---
+        Opt_FotosAparcar(["Tomar Fotos"])
+        Opt_VerFotos(["Ver Fotos Guardadas"])
 
-        Detail_Mapa(["Ver Mapa y Ruta"])
-        Detail_VerFoto(["Ver Fotos Guardadas"])
+        %% --- Formas de Ver Historial ---
+        Opt_Lista(["Ver Lista"])
+        Opt_MapaGlobal(["Ver Mapa Global"])
 
-        Detail_Revisar(["Revisar Ubicación Pasada"])
-
-        %% --- Relaciones del Actor ---
+        %% --- Relaciones Usuario ---
         User --> UC_Aparcar
         User --> UC_Encontrar
-        User --> UC_Liberar
         User --> UC_Historial
 
-        %% --- Relaciones Técnicas (Standard UML) ---
+        %% --- Relaciones del Sistema ---
+        %% Aparcar solo tiene opción de fotos
+        Opt_FotosAparcar -.->|extend| UC_Aparcar
 
-        %% Aparcar: Siempre guarda ubicación (Include). Puede tener foto (Extend).
-        UC_Aparcar -.->|include| Detail_Guardar
-        Detail_Foto -.->|extend| UC_Aparcar
+        %% Encontrar solo tiene opción de ver fotos
+        Opt_VerFotos -.->|extend| UC_Encontrar
 
-        %% Encontrar: Siempre muestra mapa (Include). Puede ver fotos (Extend).
-        %% Nota: Liberar Plaza es accesible aquí pero es un CU propio del usuario.
-        UC_Encontrar -.->|include| Detail_Mapa
-        Detail_VerFoto -.->|extend| UC_Encontrar
-
-        %% Historial: Incluye ver el detalle
-        UC_Historial -.->|include| Detail_Revisar
+        %% Historial tiene dos formas de consulta
+        UC_Historial --> Opt_Lista
+        UC_Historial --> Opt_MapaGlobal
     end
 ```
 
@@ -117,17 +114,23 @@ El código fuente se ha estructurado siguiendo una organización modular y semá
 
 ```
 lib/
-├── main.dart                  # Punto de entrada y configuración del tema
+├── main.dart                  # Punto de entrada
 ├── modelos/
-│   └── sesion_aparcamiento.dart  # Definición de la estructura de datos
-├── proveedores/
-│   └── proveedor_aparcamiento.dart # Lógica de negocio y gestión de estado
-└── pantallas/
-    ├── pantalla_splash.dart
-    ├── pantalla_inicio.dart
-    ├── pantalla_mapa_aparcar.dart
-    ├── pantalla_camara.dart
-    └── pantalla_mapa_buscar.dart
+│   └── sesion_aparcamiento.dart
+├── provider/
+│   └── provider_aparcamiento.dart
+├── pantallas/
+│   ├── pant_splash.dart
+│   ├── pant_inicio.dart
+│   ├── pant_aparcar.dart
+│   ├── pant_encontrar.dart
+│   ├── pant_camara.dart
+│   └── pant_mapa_historial.dart
+└── widgets/
+    ├── boton_accion.dart
+    ├── dialogo_auto_cierre.dart
+    ├── mazo_fotos.dart
+    └── sesiones_historial.dart
 ```
 
 ### Diagrama de Clases
@@ -138,119 +141,114 @@ He elaborado este diagrama detallado para definir la estructura de las clases, s
 ---
 config:
   layout: elk
-  theme: redux-dark
+  theme: dark
 ---
 classDiagram
-    %% --- MAIN Y CONFIGURACIÓN ---
+    direction TB
+
+    %% --- LOGICA Y DATOS ---
     class Main {
         +main()
     }
-    class ParkSnapApp {
-        +build(context) MaterialApp
-        -obtenerTema() ThemeData
-    }
 
-    %% --- MODELO DE DATOS ---
     class SesionAparcamiento {
         +double latitud
         +double longitud
-        +String direccionPostal
-        +List~String~ rutasImagenes
-        +DateTime fechaHora
-        +SesionAparcamiento(...)
-        +Map<String, dynamic> toJson()
-        +SesionAparcamiento fromJson(Map)
+        +String direccion
+        +List~String~ fotos
+        +DateTime fecha
     }
 
-    %% --- LÓGICA DE NEGOCIO (PROVIDER) ---
-    class ProveedorAparcamiento {
-        -SesionAparcamiento? _sesionActual
-        -List<SesionAparcamiento> _historico
-        +bool get estaAparcado
-        +SesionAparcamiento? get sesionActual
-        +List<SesionAparcamiento> get historico
-        +Future<void> cargarDatos()
-        +Future<void> aparcar(lat, long, fotos)
-        +Future<void> liberar()
-        -_guardarEnPreferencias()
+    class ProviderAparcamiento {
+        +SesionAparcamiento? sesionActual
+        +List~SesionAparcamiento~ historial
+        +bool estaAparcado
+        +aparcar(sesion)
+        +desaparcar()
+        +cargarDatos()
     }
 
-    %% --- INTERFAZ DE USUARIO (SCREENS) ---
-
-    %% Splash Screen
+    %% --- PANTALLAS ---
     class PantallaSplash {
         +initState()
-        -_navegarAlHome()
-        +build(context) Scaffold
     }
 
-    %% Pantalla Principal (Home)
     class PantallaInicio {
-        +build(context) Scaffold
-        -_construirAppBar() AppBar
-        -_construirCuerpo(context) Widget
-        -_construirPanelEstado(datos) Container
-        -_construirBotonAccion(context) ElevatedButton
-        -_construirBotonLiberarRapido() TextButton
-        -_construirListaHistorial(historico) ListView
+        +build()
+        +NavegarAparcar()
+        +NavegarEncontrar()
+        +NavegarMapaHistorial()
     }
 
-    %% Mapa de Aparcamiento
-    class PantallaMapaAparcar {
-        -MapController _mapController
-        +build(context) Scaffold
-        -_construirMapa() FlutterMap
-        -_obtenerUbicacionActual()
-        -_confirmarAparcamiento(context)
-        -_irACamara(context)
-        -_construirAppBar() AppBar
-    }
-
-    %% Interfaz de Cámara
-    class PantallaCamara {
-        -CameraController _controller
-        +initState()
-        +dispose()
-        +build(context) Scaffold
+    class PantallaAparcar {
+        -MapController map
         -_tomarFoto()
-        -_construirAppBar() AppBar
+        -_guardarSesion()
     }
 
-    %% Mapa de Búsqueda
-    class PantallaMapaBuscar {
-        -SesionAparcamiento sesion
-        -bool esHistorico
-        +build(context) Scaffold
-        -_construirAppBarConRetorno() AppBar
-        -_construirMapaConRuta() FlutterMap
-        -_construirTarjetaFoto() Card
-        -_abrirMapaExterno()
+    class PantallaEncontrar {
+        -MapController map
+        -_iniciarBrujula()
     }
 
-    %% --- RELACIONES Y FLUJO ---
+    class PantallaMapaHistorial {
+        +build()
+        -_mostrarDetalle()
+    }
 
-    %% Flujo de Ejecución
-    Main ..> ParkSnapApp : Ejecuta (Dependencia)
-    ParkSnapApp ..> PantallaSplash : Ruta Inicial (Dependencia)
-    ParkSnapApp ..> ProveedorAparcamiento : Inicializa (Dependencia)
+    class PantallaCamara {
+        -CameraController ctrl
+        -_tomarFoto()
+    }
 
-    %% Navegación
-    PantallaSplash ..> PantallaInicio : Navegación (Dependencia)
+    %% --- WIDGETS ---
+    class BotonAccion {
+        +IconData icono
+    }
 
-    PantallaInicio --> ProveedorAparcamiento : Consume Estado (Asociación)
-    PantallaInicio ..> PantallaMapaAparcar : Navega (Dependencia)
-    PantallaInicio ..> PantallaMapaBuscar : Navega (Dependencia)
+    class DialogoAutoCierre {
+        <<Function>>
+        +mostrarDialogoAutoCierre(...)
+    }
 
-    PantallaMapaAparcar --> ProveedorAparcamiento : Invoca aparcar (Asociación)
-    PantallaMapaAparcar ..> PantallaCamara : Navega (Dependencia)
+    class MazoFotos {
+        +List~String~ fotos
+    }
 
-    PantallaCamara ..> PantallaMapaAparcar : Retorna Lista Fotos (Dependencia)
+    class SesionesHistorial {
+        +List~Sesion~ sesiones
+    }
 
-    PantallaMapaBuscar --> SesionAparcamiento : Recibe datos (Asociación)
-    PantallaMapaBuscar --> ProveedorAparcamiento : Invoca liberar (Asociación)
+    %% --- RELACIONES ---
 
-    %% Gestión de Datos (Cardinalidad Importante aquí)
-    ProveedorAparcamiento "1" *-- "0..*" SesionAparcamiento : Gestiona (Composición)
+    %% Composición (Rombo Relleno)
+    ProviderAparcamiento *-- SesionAparcamiento : Gestiona<br/>(Composición)
+
+    %% Dependencia (Navegación - Punteada)
+    Main ..> PantallaSplash : Ejecuta<br/>(Dependencia)
+    PantallaSplash ..> PantallaInicio : Navega<br/>(Dependencia)
+
+    PantallaInicio ..> PantallaAparcar : Navega<br/>(Dependencia)
+    PantallaInicio ..> PantallaEncontrar : Navega<br/>(Dependencia)
+    PantallaInicio ..> PantallaMapaHistorial : Navega<br/>(Dependencia)
+
+    %% Asociación (Uso - Continua)
+    PantallaAparcar --> PantallaCamara : Usa<br/>(Asociación)
+
+    PantallaInicio --> ProviderAparcamiento : Consume<br/>(Asociación)
+    PantallaAparcar --> ProviderAparcamiento : Modifica<br/>(Asociación)
+    PantallaEncontrar --> ProviderAparcamiento : Modifica<br/>(Asociación)
+    PantallaMapaHistorial --> ProviderAparcamiento : Lee<br/>(Asociación)
+
+    PantallaInicio --> BotonAccion : Usa<br/>(Asociación)
+    PantallaInicio --> SesionesHistorial : Usa<br/>(Asociación)
+
+    PantallaAparcar --> MazoFotos : Usa<br/>(Asociación)
+    PantallaEncontrar --> MazoFotos : Usa<br/>(Asociación)
+
+    PantallaAparcar --> DialogoAutoCierre : Usa<br/>(Asociación)
+    PantallaEncontrar --> DialogoAutoCierre : Usa<br/>(Asociación)
+    PantallaInicio --> DialogoAutoCierre : Usa<br/>(Asociación)
 ```
 
 ## 5. Plan de Trabajo
@@ -260,7 +258,42 @@ Para abordar el desarrollo de forma ordenada, he establecido la siguiente hoja d
 1.  **Configuración Inicial:** Creación del proyecto Flutter e instalación de dependencias en `pubspec.yaml`.
 2.  **Estructura de Directorios:** Organización de las carpetas según la arquitectura definida.
 3.  **Lógica y Datos:** Implementación de la clase `SesionAparcamiento` y del `ProveedorAparcamiento`. El objetivo inicial es asegurar que la persistencia y la gestión de estado funcionan correctamente con datos de prueba.
-4.  **Interfaz Base:** Desarrollo de la `PantallaInicio` y su vinculación con el Provider para verificar los cambios de estado.
+4.  **Interfaz Base:** Desarrollo de las pantallas principales `PantallaInicio`, `PantallaAparcar`, `PantallaEncontrar` y su vinculación con el Provider para verificar los cambios de estado.
 5.  **Pruebas de Geolocalización:** Implementación del mapa y verificación de la obtención de coordenadas en tiempo real.
 6.  **Integración de Cámara:** Conexión con el hardware del dispositivo para la captura y almacenamiento de imágenes.
 7.  **Pruebas Finales:** Validación del flujo completo de uso: Aparcar -> Foto -> Persistencia -> Visualización -> Liberación.
+
+## 6. Mejoras y Refinamiento Final
+
+Como fase final del desarrollo, he implementado una serie de mejoras visuales y funcionales para elevar la calidad de la experiencia de usuario (UX):
+
+1.  **Mapa de Historial Interactivo:**
+    He creado una nueva pantalla (`PantallaMapaHistorial`) accesible desde la barra superior. Esta vista permite visualizar todas las sesiones de aparcamiento pasadas como chinchetas en un mapa global, en lugar de solo verlas en una lista de texto. Al pulsar una chincheta, se muestra el detalle de esa sesión.
+
+2.  **Orientación por Brújula:**
+    Para facilitar la búsqueda del vehículo, he integrado el sensor de brújula del dispositivo (`flutter_compass`). Ahora, en el mapa de "Encontrar Coche", el icono del usuario es una flecha que rota en tiempo real según hacia donde apunte el móvil, ayudando a orientarse mejor hacia el destino.
+
+3.  **Feedback Visual Mejorado:**
+    He reemplazado las notificaciones simples (Snackbars) por **diálogos modales personalizados y auto-cerrables** (`DialogoAutoCierre`). Al completar una acción importante (Aparcar o Encontrar), aparece una tarjeta elegante en la parte superior con fondo traslúcido que confirma la acción y se cierra automáticamente tras 1.5 segundos, ofreciendo una interacción mucho más fluida y moderna.
+
+4.  **Unificación de Diseño:**
+    He estandarizado los botones y diálogos en toda la aplicación para mantener una coherencia visual, asegurando que todas las pantallas compartan el mismo lenguaje de diseño "ParkSnap".
+
+## 7. Resultado Final (Capturas)
+
+A continuación se muestra el flujo completo de uso de la aplicación:
+
+|        **1. Pantalla de Carga**        |       **2. Inicio (Sin Aparcar)**       |
+| :------------------------------------: | :-------------------------------------: |
+| ![Splash](../assets/images/splahs.jpg) | ![Inicio](../assets/images/aparcar.jpg) |
+|           Bienvenida y carga           |  Pantalla principal lista para aparcar  |
+
+|         **3. Mapa: Confirmar Ubicación**          |       **4. Inicio (Estado Aparcado)**        |
+| :-----------------------------------------------: | :------------------------------------------: |
+| ![Mapa Aparcar](../assets/images/mapaAparcar.jpg) | ![Encontrar](../assets/images/encontrar.jpg) |
+|           Guardado de ubicación y foto            |     Estado actual y tiempo transcurrido      |
+
+|            **5. Mapa: Búsqueda y Brújula**            |           **6. Historial Global**           |
+| :---------------------------------------------------: | :-----------------------------------------: |
+| ![Mapa Encontrar](../assets/images/mapaEncontrar.jpg) | ![Historial](../assets/images/mapaHist.jpg) |
+|              Ruta y orientación al coche              |      Visualización de sesiones pasadas      |
