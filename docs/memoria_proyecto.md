@@ -31,6 +31,8 @@ Esta pantalla actúa como el centro de control y mantiene una estructura constan
 **Navegación:**
 Todas las pantallas secundarias (Mapas, Cámara) incluyen una barra superior (**AppBar**) con un botón de retorno evidente para garantizar una navegación fluida hacia la pantalla principal.
 
+<div style="page-break-before:always">&nbsp;</div>
+
 **Área Dinámica (Central):**
 Esta zona central cambia completamente según el estado del aparcamiento:
 
@@ -68,45 +70,9 @@ El proceso para recuperar el vehículo sigue una secuencia estructurada:
 
 Para formalizar las interacciones del usuario con el sistema, se ha definido el siguiente diagrama de casos de uso que cubre la totalidad de las funcionalidades de ParkSnap.
 
-```mermaid
-graph TD
-    %%{init: {'theme': 'redux-dark'}}%%
+![Diagrama de Casos de Uso](../assets/images/casosUsoImg.png)
 
-    User["Usuario"]
-
-    subgraph Sistema_ParkSnap [Sistema ParkSnap]
-        direction TB
-
-        %% --- Casos de Uso Principales ---
-        UC_Aparcar(["<b>Aparcar Coche</b>"])
-        UC_Encontrar(["<b>Encontrar Coche</b>"])
-        UC_Historial(["<b>Consultar Historial</b>"])
-
-        %% --- Extensiones y Opciones ---
-        Opt_FotosAparcar(["Tomar Fotos"])
-        Opt_VerFotos(["Ver Fotos Guardadas"])
-
-        %% --- Formas de Ver Historial ---
-        Opt_Lista(["Ver Lista"])
-        Opt_MapaGlobal(["Ver Mapa Global"])
-
-        %% --- Relaciones Usuario ---
-        User --> UC_Aparcar
-        User --> UC_Encontrar
-        User --> UC_Historial
-
-        %% --- Relaciones del Sistema ---
-        %% Aparcar solo tiene opción de fotos
-        Opt_FotosAparcar -.->|extend| UC_Aparcar
-
-        %% Encontrar solo tiene opción de ver fotos
-        Opt_VerFotos -.->|extend| UC_Encontrar
-
-        %% Historial tiene dos formas de consulta
-        UC_Historial --> Opt_Lista
-        UC_Historial --> Opt_MapaGlobal
-    end
-```
+<div style="page-break-before:always">&nbsp;</div>
 
 ## 4. Arquitectura Técnica
 
@@ -133,123 +99,15 @@ lib/
     └── sesiones_historial.dart
 ```
 
+<div style="page-break-before:always">&nbsp;</div>
+
 ### Diagrama de Clases
 
 He elaborado este diagrama detallado para definir la estructura de las clases, sus atributos, métodos específicos para la construcción de la UI (`_build...`) y las relaciones entre compontentes.
 
-```mermaid
----
-config:
-  layout: elk
-  theme: dark
----
-classDiagram
-    direction TB
+![Diagrama de Clases](../assets/images/clasesImg.png)
 
-    %% --- LOGICA Y DATOS ---
-    class Main {
-        +main()
-    }
-
-    class SesionAparcamiento {
-        +double latitud
-        +double longitud
-        +String direccion
-        +List~String~ fotos
-        +DateTime fecha
-    }
-
-    class ProviderAparcamiento {
-        +SesionAparcamiento? sesionActual
-        +List~SesionAparcamiento~ historial
-        +bool estaAparcado
-        +aparcar(sesion)
-        +desaparcar()
-        +cargarDatos()
-    }
-
-    %% --- PANTALLAS ---
-    class PantallaSplash {
-        +initState()
-    }
-
-    class PantallaInicio {
-        +build()
-        +NavegarAparcar()
-        +NavegarEncontrar()
-        +NavegarMapaHistorial()
-    }
-
-    class PantallaAparcar {
-        -MapController map
-        -_tomarFoto()
-        -_guardarSesion()
-    }
-
-    class PantallaEncontrar {
-        -MapController map
-        -_iniciarBrujula()
-    }
-
-    class PantallaMapaHistorial {
-        +build()
-        -_mostrarDetalle()
-    }
-
-    class PantallaCamara {
-        -CameraController ctrl
-        -_tomarFoto()
-    }
-
-    %% --- WIDGETS ---
-    class BotonAccion {
-        +IconData icono
-    }
-
-    class DialogoAutoCierre {
-        <<Function>>
-        +mostrarDialogoAutoCierre(...)
-    }
-
-    class MazoFotos {
-        +List~String~ fotos
-    }
-
-    class SesionesHistorial {
-        +List~Sesion~ sesiones
-    }
-
-    %% --- RELACIONES ---
-
-    %% Composición (Rombo Relleno)
-    ProviderAparcamiento *-- SesionAparcamiento : Gestiona<br/>(Composición)
-
-    %% Dependencia (Navegación - Punteada)
-    Main ..> PantallaSplash : Ejecuta<br/>(Dependencia)
-    PantallaSplash ..> PantallaInicio : Navega<br/>(Dependencia)
-
-    PantallaInicio ..> PantallaAparcar : Navega<br/>(Dependencia)
-    PantallaInicio ..> PantallaEncontrar : Navega<br/>(Dependencia)
-    PantallaInicio ..> PantallaMapaHistorial : Navega<br/>(Dependencia)
-
-    %% Asociación (Uso - Continua)
-    PantallaAparcar --> PantallaCamara : Usa<br/>(Asociación)
-
-    PantallaInicio --> ProviderAparcamiento : Consume<br/>(Asociación)
-    PantallaAparcar --> ProviderAparcamiento : Modifica<br/>(Asociación)
-    PantallaEncontrar --> ProviderAparcamiento : Modifica<br/>(Asociación)
-    PantallaMapaHistorial --> ProviderAparcamiento : Lee<br/>(Asociación)
-
-    PantallaInicio --> BotonAccion : Usa<br/>(Asociación)
-    PantallaInicio --> SesionesHistorial : Usa<br/>(Asociación)
-
-    PantallaAparcar --> MazoFotos : Usa<br/>(Asociación)
-    PantallaEncontrar --> MazoFotos : Usa<br/>(Asociación)
-
-    PantallaAparcar --> DialogoAutoCierre : Usa<br/>(Asociación)
-    PantallaEncontrar --> DialogoAutoCierre : Usa<br/>(Asociación)
-    PantallaInicio --> DialogoAutoCierre : Usa<br/>(Asociación)
-```
+<div style="page-break-before:always">&nbsp;</div>
 
 ## 5. Plan de Trabajo
 
@@ -262,6 +120,8 @@ Para abordar el desarrollo de forma ordenada, he establecido la siguiente hoja d
 5.  **Pruebas de Geolocalización:** Implementación del mapa y verificación de la obtención de coordenadas en tiempo real.
 6.  **Integración de Cámara:** Conexión con el hardware del dispositivo para la captura y almacenamiento de imágenes.
 7.  **Pruebas Finales:** Validación del flujo completo de uso: Aparcar -> Foto -> Persistencia -> Visualización -> Liberación.
+
+<div style="page-break-before:always">&nbsp;</div>
 
 ## 6. Mejoras y Refinamiento Final
 
@@ -278,6 +138,8 @@ Como fase final del desarrollo, he implementado una serie de mejoras visuales y 
 
 4.  **Unificación de Diseño:**
     He estandarizado los botones y diálogos en toda la aplicación para mantener una coherencia visual, asegurando que todas las pantallas compartan el mismo lenguaje de diseño "ParkSnap".
+
+<div style="page-break-before:always">&nbsp;</div>
 
 ## 7. Resultado Final (Capturas)
 
