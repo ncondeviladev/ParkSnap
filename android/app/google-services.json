@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "748283418756",
+    "project_id": "parksnap-74d9e",
+    "storage_bucket": "parksnap-74d9e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:748283418756:android:a41926ae126f9c62d64ad1",
+        "android_client_info": {
+          "package_name": "com.parksnap.park_snap"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBp12fCqEg9oCsLocLevPI4HNFKflkX-A0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

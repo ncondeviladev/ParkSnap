@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:math';
 import 'package:park_snap/pantallas/pant_camara.dart';
 
