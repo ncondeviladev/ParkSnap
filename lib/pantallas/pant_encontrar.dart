@@ -145,7 +145,7 @@ class _PantallaEncontrarState extends State<PantallaEncontrar> {
           FlutterMap(
             mapController: _mapController,
             options: MapOptions(
-              initialCenter: _posicionCoche!,
+              initialCenter: _posicionCoche ?? const LatLng(0, 0),
               initialZoom: 15,
             ),
             children: [

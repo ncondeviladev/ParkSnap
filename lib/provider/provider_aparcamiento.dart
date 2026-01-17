@@ -1,75 +1,70 @@
-import 'dart:convert';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../modelos/sesion_aparcamiento.dart';
+import '../data/sesion_repository.dart';
 
-//ChangeNotifier avisa a las pantallas de los cambios
 class ProviderAparcamiento extends ChangeNotifier {
   SesionAparcamiento? _sesion;
-  final List<SesionAparcamiento> _sesionesHistorial = [];
+  List<SesionAparcamiento> _sesionesHistorial = [];
+
   SesionAparcamiento? get sesion => _sesion;
   List<SesionAparcamiento> get sesionesHistorial => _sesionesHistorial;
   bool get estaAparcado => _sesion != null;
 
-  //Clave para guardar en shared preferences
-  static const String _keySesion = 'sesion';
-  static const String _keyHistorial = 'historial';
+  bool _escuchando = false;
 
   Future<void> cargarDatos() async {
-    //Permitimos acceso a shared preferences y buscamos la sesion guardada
-    final prefs = await SharedPreferences.getInstance();
-    final String? sesionJson = prefs.getString(_keySesion);
-
-    if (sesionJson != null) {
-      //Si encuentra usamos el constructor factory
-      _sesion = SesionAparcamiento.fromJson(jsonDecode(sesionJson));
+    if (_escuchando) return;
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      _escuchando = true;
+      // Escuchamos los cambios en la nube
+      SesionRepository.getSesiones(user.uid).listen((lista) {
+        _sesionesHistorial = lista;
+        try {
+          // Buscamos si hay alguna sesion marcada como activa
+          _sesion = _sesionesHistorial.firstWhere((s) => s.activa == true);
+        } catch (e) {
+          _sesion = null;
+        }
+        notifyListeners();
+      });
     }
-
-    //Cargamos el historial
-    final List<String>? historialJson = prefs.getStringList(_keyHistorial);
-    if (historialJson != null) {
-      _sesionesHistorial.clear(); //Limpiamos la lista y la cargamos de nuevo
-      //Si encuentra usamos el constructor factory
-      for (var sesionJson in (historialJson)) {
-        _sesionesHistorial.add(
-          SesionAparcamiento.fromJson(jsonDecode(sesionJson)),
-        );
-      }
-    }
-    //Notificamos a la pantalla del cambio
-    notifyListeners();
   }
 
-  //Aparcar - Guardar sesion
-  Future<void> aparcar(SesionAparcamiento nuevaSesion) async {
-    //Creamos la sesion con la informacion actual
-    _sesion = nuevaSesion;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_keySesion, jsonEncode(_sesion!.toJson()));
+  Future<void> aparcar(SesionAparcamiento sesion) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
 
-    //Añadimos al historial
-    _sesionesHistorial.insert(
-      0,
-      nuevaSesion,
-    ); //Indice 0 para mostrar el mas reciente
+    final sesionActiva = SesionAparcamiento(
+      latitud: sesion.latitud,
+      longitud: sesion.longitud,
+      direccion: sesion.direccion,
+      fotos: sesion.fotos,
+      fecha: sesion.fecha,
+      activa: true, // Se guarda como activa en Firestore
+    );
 
-    //Guardamos el historial, recorremos cada item: Sesion - MapaJson - TextoJson
-    final List<String> listaSesionesJson = _sesionesHistorial
-        .map((s) => jsonEncode(s.toJson()))
-        .toList();
-    //Guardamos en shared preferences
-    await prefs.setStringList(_keyHistorial, listaSesionesJson);
-    //Notificamos a la pantalla del cambio
-    notifyListeners();
+    // Guardamos en la nube
+    await SesionRepository.addSesion(user.uid, sesionActiva);
   }
 
-  //Desaparcar - Borrar sesion
   Future<void> desaparcar() async {
-    _sesion = null;
-    //Accedemos a shared preferences y borramos la sesion guardada
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_keySesion);
-    //Notificamos a la pantalla del cambio
-    notifyListeners();
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null && _sesion != null) {
+      final sesionFinalizada = SesionAparcamiento(
+        id: _sesion!.id,
+        latitud: _sesion!.latitud,
+        longitud: _sesion!.longitud,
+        direccion: _sesion!.direccion,
+        fotos: _sesion!.fotos,
+        fecha: _sesion!.fecha,
+        activa: false,
+      );
+
+      await SesionRepository.updateSesion(user.uid, sesionFinalizada);
+      _sesion = null;
+      notifyListeners();
+    }
   }
 }

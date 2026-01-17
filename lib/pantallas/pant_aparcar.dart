@@ -172,7 +172,7 @@ class _PantallaAparcarState extends State<PantallaAparcar> {
                           fotos: List.from(_fotos),
                         );
                         //Guardamos la sesion en el provider
-                        Provider.of<ProviderAparcamiento>(
+                        await Provider.of<ProviderAparcamiento>(
                           context,
                           listen: false,
                         ).aparcar(nuevaSesion);

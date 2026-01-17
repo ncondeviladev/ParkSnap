@@ -1,38 +1,45 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class SesionAparcamiento {
+  final String? id;
   final double latitud;
   final double longitud;
   final String direccion;
-  final List<String>? fotos; //guardamos rutas de las fotos
+  final List<String>? fotos;
   final DateTime fecha;
+  final bool activa;
 
   SesionAparcamiento({
+    this.id,
     required this.latitud,
     required this.longitud,
     required this.direccion,
     required this.fotos,
     required this.fecha,
+    this.activa = false,
   });
 
-  //Metodos de serializacion
-
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toMap() {
     return {
       'latitud': latitud,
       'longitud': longitud,
       'direccion': direccion,
       'fotos': fotos,
-      'fecha': fecha.toIso8601String(), //guardamos la fecha en formato ISO
+      'fecha': fecha,
+      'activa': activa,
     };
   }
 
-  //Factroy es un constructor para deserializar
-  factory SesionAparcamiento.fromJson(Map<String, dynamic> json) {
+  factory SesionAparcamiento.fromFirestore(DocumentSnapshot doc) {
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
     return SesionAparcamiento(
-      latitud: json['latitud'],
-      longitud: json['longitud'],
-      direccion: json['direccion'],
-      fotos: json['fotos'] != null ? List<String>.from(json['fotos']) : [],
-      fecha: DateTime.parse(json['fecha']),
+      id: doc.id,
+      latitud: (data['latitud'] as num).toDouble(),
+      longitud: (data['longitud'] as num).toDouble(),
+      direccion: data['direccion'] ?? '',
+      fotos: data['fotos'] != null ? List<String>.from(data['fotos']) : [],
+      fecha: (data['fecha'] as Timestamp).toDate(),
+      activa: data['activa'] ?? false,
     );
   }
 }

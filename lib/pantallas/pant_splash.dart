@@ -1,6 +1,8 @@
 import 'package:avatar_glow/avatar_glow.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:park_snap/pantallas/pant_auth.dart';
 import 'package:park_snap/pantallas/pant_inicio.dart';
 import 'package:park_snap/provider/provider_aparcamiento.dart';
 import 'package:provider/provider.dart';
@@ -19,30 +21,32 @@ class _PantallaSplashState extends State<PantallaSplash> {
     _iniciarApp();
   }
 
+  //Ahora pantalla splash comprueba login
   Future<void> _iniciarApp() async {
-    // Carga de datos
+    // Carga inicial
     await Provider.of<ProviderAparcamiento>(
       context,
       listen: false,
     ).cargarDatos();
-
-    // Pequeña espera para disfrutar la animacion
+    // Espera de la animacion
     await Future.delayed(const Duration(seconds: 3));
+    if (!mounted) return;
+    // Ecuentra usuario logeado?
+    final user = FirebaseAuth.instance.currentUser;
 
-    if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        PageRouteBuilder(
-          pageBuilder:
-              (_, __, ___) => // "__" son atributos vacios que no necesitoamos
-                  const PantallaInicio(),
-          transitionsBuilder: (_, animation, __, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-          transitionDuration: const Duration(milliseconds: 800),
-        ),
-      );
+    Widget pantallaSiguiente;
+    if (user != null) {
+      // Si hay  vamos a la pantalla principal
+      pantallaSiguiente = const PantallaInicio();
+    } else {
+      // Si no vamos al login
+      pantallaSiguiente = const PantallaAuth();
     }
+    // Navegación final
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => pantallaSiguiente),
+    );
   }
 
   @override

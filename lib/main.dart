@@ -1,9 +1,20 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_ui_auth/firebase_ui_auth.dart';
+import 'package:firebase_ui_oauth_google/firebase_ui_oauth_google.dart';
 import 'package:flutter/material.dart';
+import 'package:park_snap/firebase_options.dart';
 import 'package:park_snap/pantallas/pant_splash.dart';
 import 'package:park_snap/provider/provider_aparcamiento.dart';
 import 'package:provider/provider.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  FirebaseUIAuth.configureProviders([
+    EmailAuthProvider(),
+    GoogleProvider(clientId: ''),
+  ]);
   runApp(const ParkSnapApp());
 }
 
@@ -30,6 +41,7 @@ class ParkSnapApp extends StatelessWidget {
             centerTitle: true,
           ),
         ),
+
         home: const PantallaSplash(),
       ),
     );

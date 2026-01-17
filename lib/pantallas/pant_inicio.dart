@@ -1,7 +1,9 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:park_snap/pantallas/pant_aparcar.dart';
+import 'package:park_snap/pantallas/pant_auth.dart';
 import 'package:park_snap/pantallas/pant_encontrar.dart';
 import 'package:park_snap/widgets/dialogo_auto_cierre.dart';
 import 'package:park_snap/provider/provider_aparcamiento.dart';
@@ -47,6 +49,7 @@ class PantallaInicio extends StatelessWidget {
             ),
             actions: [
               IconButton(
+                //Boton historial
                 icon: const Icon(Icons.map_outlined, color: Colors.white),
                 tooltip: "Mapa Historial",
                 onPressed: () {
@@ -56,6 +59,23 @@ class PantallaInicio extends StatelessWidget {
                       builder: (context) => const PantallaMapaHistorial(),
                     ),
                   );
+                },
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                //boton logout
+                icon: const Icon(Icons.logout, color: Colors.redAccent),
+                tooltip: "Cerrar Sesión",
+                onPressed: () async {
+                  await FirebaseAuth.instance.signOut();
+                  if (context.mounted) {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const PantallaAuth(),
+                      ),
+                    );
+                  }
                 },
               ),
               const SizedBox(width: 8),
