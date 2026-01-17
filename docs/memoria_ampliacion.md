@@ -28,4 +28,4 @@ Dado que la app ahora depende de internet, he añadido un sistema robusto de ges
 
 He aprovechado esta actualización para corregir problemas de diseño:
 
-- **Scroll Adaptativo:** He implementado `SingleChildScrollView` en la pantalla principal para evitar errores de visualización ("overflow") al girar el móvil o en pantallas de diferentes tamaños.
+- **Scroll Adaptativo:** He implementado `SingleChildScrollView` en la pantalla principal para evitar errores de visualización ("overflow") al girar el móvil o en pantallas de diferentes tamaños..
