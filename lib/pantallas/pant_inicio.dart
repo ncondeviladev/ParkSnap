@@ -11,6 +11,8 @@ import 'package:park_snap/widgets/boton_accion.dart';
 import 'package:park_snap/widgets/sesiones_historial.dart';
 import 'package:provider/provider.dart';
 import 'package:park_snap/pantallas/pant_mapa_historial.dart';
+import 'package:app_settings/app_settings.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 class PantallaInicio extends StatelessWidget {
   const PantallaInicio({super.key});
@@ -81,20 +83,20 @@ class PantallaInicio extends StatelessWidget {
               const SizedBox(width: 8),
             ],
           ),
-          body: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                //Zona central con boton
-                Expanded(
-                  flex: 3,
-                  child: Center(
+          body: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  //Zona central con botón eliminamos container por el scroll
+                  Center(
                     child: provider.estaAparcado
                         //SI ESTA APARCADO MOSTRAMOS BOTON DESAPARCAR
                         ? Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
+                              const SizedBox(height: 20),
                               BotonAccion(
                                 icono: MdiIcons.mapSearch,
                                 texto: "ENCONTRAR",
@@ -103,7 +105,8 @@ class PantallaInicio extends StatelessWidget {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => PantallaEncontrar(),
+                                      builder: (context) =>
+                                          const PantallaEncontrar(),
                                     ),
                                   );
                                 },
@@ -134,34 +137,59 @@ class PantallaInicio extends StatelessWidget {
                                 ),
                                 child: const Text("¡Encontrado!"),
                               ),
+                              const SizedBox(height: 20),
                             ],
                           )
                         //SI NO ESTA APARCADO MOSTRAMOS BOTON APARCAR
-                        : BotonAccion(
-                            icono: MdiIcons.carSports,
-                            texto: "APARCAR",
-                            color: const Color(0xFF3498DB),
-                            accion: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => PantallaAparcar(),
-                                ),
-                              );
-                            },
+                        : Padding(
+                            //Envolvemos con padding para separar del historial
+                            padding: const EdgeInsets.symmetric(vertical: 40),
+                            child: BotonAccion(
+                              icono: MdiIcons.carSports,
+                              texto: "APARCAR",
+                              color: const Color(0xFF3498DB),
+                              accion: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const PantallaAparcar(),
+                                  ),
+                                );
+                              },
+                            ),
                           ),
                   ),
-                ),
-                const Divider(height: 1, color: Colors.grey),
-                //Zona inferior con historial
-                Expanded(
-                  flex: 2,
-                  child: SesionesHistorial(
-                    sesiones: provider.sesionesHistorial,
-                  ),
-                ),
-              ],
+                  const Divider(height: 40, color: Colors.grey),
+                  //Zona inferior con historial
+                  SesionesHistorial(sesiones: provider.sesionesHistorial),
+                ],
+              ),
             ),
+          ),
+          //Boton inteligente de red
+          floatingActionButton: StreamBuilder<List<ConnectivityResult>>(
+            stream: Connectivity().onConnectivityChanged,
+            builder: (context, snapshot) {
+              final resultados = snapshot.data ?? [];
+              bool tieneRed = resultados.any(
+                (red) => red != ConnectivityResult.none,
+              );
+
+              if (tieneRed) return const SizedBox.shrink();
+
+              return FloatingActionButton.extended(
+                onPressed: () => AppSettings.openAppSettings(
+                  type: AppSettingsType.dataRoaming,
+                ),
+                backgroundColor: Colors.red,
+                icon: const Icon(Icons.wifi_off, color: Colors.white),
+                label: const Text(
+                  "SIN RED - ACTIVAR DATOS",
+                  style: TextStyle(color: Colors.white),
+                ),
+              );
+            },
           ),
         );
       },

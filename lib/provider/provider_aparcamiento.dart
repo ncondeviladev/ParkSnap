@@ -40,12 +40,11 @@ class ProviderAparcamiento extends ChangeNotifier {
       latitud: sesion.latitud,
       longitud: sesion.longitud,
       direccion: sesion.direccion,
-      fotos: sesion.fotos,
+      fotos: sesion.fotos, // Se guarda la ruta local
       fecha: sesion.fecha,
-      activa: true, // Se guarda como activa en Firestore
+      activa: true,
     );
 
-    // Guardamos en la nube
     await SesionRepository.addSesion(user.uid, sesionActiva);
   }
 

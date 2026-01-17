@@ -8,6 +8,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:park_snap/modelos/sesion_aparcamiento.dart';
 import 'package:park_snap/provider/provider_aparcamiento.dart';
+import 'package:park_snap/util/conectividad.dart';
 import 'package:park_snap/widgets/mazo_fotos.dart';
 import 'package:provider/provider.dart';
 import 'package:park_snap/widgets/dialogo_auto_cierre.dart';
@@ -215,7 +216,19 @@ class _PantallaEncontrarState extends State<PantallaEncontrar> {
               backgroundColor: Colors.blueAccent,
               icon: const Icon(Icons.check_circle),
               label: const Text("ENCONTRADO"),
-              onPressed: () {
+              onPressed: () async {
+                //Comprobacion de conexion antes de guardar
+                bool conectado = await Conectividad.tieneConexion();
+                if (!conectado && context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("No tienes conexión a Internet."),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+
                 mostrarDialogoAutoCierre(
                   context: context,
                   texto: "¡Encontrado!",

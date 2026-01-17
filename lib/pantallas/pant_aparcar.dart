@@ -13,6 +13,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:park_snap/modelos/sesion_aparcamiento.dart';
 import 'package:park_snap/provider/provider_aparcamiento.dart';
+import 'package:park_snap/util/conectividad.dart';
 import 'package:park_snap/widgets/mazo_fotos.dart';
 import 'package:provider/provider.dart';
 import 'package:park_snap/widgets/dialogo_auto_cierre.dart';
@@ -134,6 +135,18 @@ class _PantallaAparcarState extends State<PantallaAparcar> {
                       label: const Text("APARCAR AQUÍ"),
                       backgroundColor: Colors.green,
                       onPressed: () async {
+                        //Comprobacion de conexion antes de guardar
+                        bool conectado = await Conectividad.tieneConexion();
+                        if (!conectado && context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("No puedes aparcar sin conexión"),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return;
+                        }
+
                         String direccion = "Ubicación desconocida";
                         try {
                           List<Placemark> placemarks =

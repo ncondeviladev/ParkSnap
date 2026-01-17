@@ -48,60 +48,61 @@ class SesionesHistorial extends StatelessWidget {
           ),
         ),
 
-        //Lista de datos con Expanded para que la lista ocupe todo el espacio disponible
-        Expanded(
-          child: ListView.builder(
-            itemCount: sesiones.length,
-            itemBuilder: (context, index) {
-              //Funcion que dibuja cada fila
-              final sesion =
-                  sesiones[index]; //Obtenemos cada sesion del historial usando el indice
+        // Quitamos el expanded y usamos shrinkWrap en la lista para que funcione en scroll
+        ListView.builder(
+          shrinkWrap: true,
+          physics:
+              const NeverScrollableScrollPhysics(), // El scroll lo maneja el builder
+          itemCount: sesiones.length,
+          itemBuilder: (context, index) {
+            //Funcion que dibuja cada fila
+            final sesion =
+                sesiones[index]; //Obtenemos cada sesion del historial usando el indice
 
-              return Card(
-                margin: const EdgeInsets.symmetric(
-                  //Separacion entre cards
-                  horizontal: 16.0,
-                  vertical: 4.0,
+            return Card(
+              margin: const EdgeInsets.symmetric(
+                //Separacion entre cards
+                horizontal: 16.0,
+                vertical: 4.0,
+              ),
+              color: Colors.white10,
+
+              child: ListTile(
+                //LIistTile formato estandar para filas (icono, titulo, subtitulo y fecha) actua como bucle mostrando cada tarjeta
+                leading: const Icon(
+                  //leading primera posicion de listtile
+                  Icons.history,
+                  color: Colors.blueAccent,
                 ),
-                color: Colors.white10,
-
-                child: ListTile(
-                  //LIistTile formato estandar para filas (icono, titulo, subtitulo y fecha) actua como bucle mostrando cada tarjeta
-                  leading: const Icon(
-                    //leading primera posicion de listtile
-                    Icons.history,
-                    color: Colors.blueAccent,
+                //Titulo direccion
+                title: Text(
+                  sesion.direccion,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
                   ),
-                  //Titulo direccion
-                  title: Text(
-                    sesion.direccion,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                ),
+                //Subtitulo fecha
+                subtitle: Text(
+                  DateFormat('dd/MM/yyyy HH:mm').format(sesion.fecha),
+                  style: const TextStyle(color: Colors.white70),
+                ),
+                trailing: const Icon(
+                  Icons.arrow_forward_ios,
+                  color: Colors.white70,
+                ),
+                onTap: () {
+                  //Navegamos a la pantalla de encontrar coche
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PantallaEncontrar(sesion: sesion),
                     ),
-                  ),
-                  //Subtitulo fecha
-                  subtitle: Text(
-                    DateFormat('dd/MM/yyyy HH:mm').format(sesion.fecha),
-                    style: const TextStyle(color: Colors.white70),
-                  ),
-                  trailing: const Icon(
-                    Icons.arrow_forward_ios,
-                    color: Colors.white70,
-                  ),
-                  onTap: () {
-                    //Navegamos a la pantalla de encontrar coche
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => PantallaEncontrar(sesion: sesion),
-                      ),
-                    );
-                  },
-                ),
-              );
-            },
-          ),
+                  );
+                },
+              ),
+            );
+          },
         ),
       ],
     );

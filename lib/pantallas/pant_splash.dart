@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:park_snap/pantallas/pant_auth.dart';
 import 'package:park_snap/pantallas/pant_inicio.dart';
 import 'package:park_snap/provider/provider_aparcamiento.dart';
+import 'package:park_snap/util/conectividad.dart';
+import 'package:app_settings/app_settings.dart';
 import 'package:provider/provider.dart';
 
 class PantallaSplash extends StatefulWidget {
@@ -23,6 +25,44 @@ class _PantallaSplashState extends State<PantallaSplash> {
 
   //Ahora pantalla splash comprueba login
   Future<void> _iniciarApp() async {
+    //Comprobacion de conexion
+    bool conectado = await Conectividad.tieneConexion();
+    if (!conectado && context.mounted) {
+      //Mensaje rapido
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("No tienes conexión a Internet."),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+
+      //Pop-up con boton
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text("Sin Conexión"),
+          content: const Text(
+            "ParkSnap necesita internet, ACTIVAR WIFI para continuar",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("MÁS TARDE"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                AppSettings.openAppSettings(type: AppSettingsType.dataRoaming);
+                Navigator.pop(context);
+              },
+              child: const Text("ACTIVAR"),
+            ),
+          ],
+        ),
+      );
+    }
+
     // Carga inicial
     await Provider.of<ProviderAparcamiento>(
       context,
