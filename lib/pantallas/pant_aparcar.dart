@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:park_snap/pantallas/pant_camara.dart';
 
 // ... (existing imports, but since I'm targeting the whole file structure or large chunk, I'll be careful)
@@ -169,18 +168,11 @@ class _PantallaAparcarState extends State<PantallaAparcar> {
 
                         //Si el widget sigue montado
                         if (!context.mounted) return;
-
-                        // RUIDO ALEATORIO (SOLO DEBUG)
-                        final random = Random();
-                        final offsetLat = (random.nextDouble() - 0.5) * 0.005;
-                        final offsetLng = (random.nextDouble() - 0.5) * 0.005;
-
+                        //Eliminamos la ubicacion inexacta de pruebas
                         final nuevaSesion = SesionAparcamiento(
                           fecha: DateTime.now(),
-                          latitud:
-                              _ubicacionActual!.latitude + offsetLat, // Offset
-                          longitud:
-                              _ubicacionActual!.longitude + offsetLng, // Offset
+                          latitud: _ubicacionActual!.latitude,
+                          longitud: _ubicacionActual!.longitude,
                           direccion: direccion,
                           fotos: List.from(_fotos),
                         );

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import '../modelos/sesion_aparcamiento.dart';
@@ -11,25 +12,41 @@ class ProviderAparcamiento extends ChangeNotifier {
   List<SesionAparcamiento> get sesionesHistorial => _sesionesHistorial;
   bool get estaAparcado => _sesion != null;
 
-  bool _escuchando = false;
+//Cambiamos el bool por un subscription para escuchar los cambios en tiempo real
+  StreamSubscription? _subscription;
 
   Future<void> cargarDatos() async {
-    if (_escuchando) return;
+    // Si ya estamos escuchando al usuario actual, no hacemos nada pero si cambia de usuario reiniciamos
     final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      _escuchando = true;
-      // Escuchamos los cambios en la nube
-      SesionRepository.getSesiones(user.uid).listen((lista) {
-        _sesionesHistorial = lista;
-        try {
-          // Buscamos si hay alguna sesion marcada como activa
-          _sesion = _sesionesHistorial.firstWhere((s) => s.activa == true);
-        } catch (e) {
-          _sesion = null;
-        }
-        notifyListeners();
-      });
+
+    // Si no hay usuario limpiamos y salimos
+    if (user == null) {
+      limpiarDatos();
+      return;
     }
+
+    // Cancelamos suscripcion anterior si existe 
+    await _subscription?.cancel();
+
+   
+    _subscription = SesionRepository.getSesiones(user.uid).listen((lista) {
+      _sesionesHistorial = lista;
+      try {
+        // Buscamos si hay alguna sesion marcada como activa
+        _sesion = _sesionesHistorial.firstWhere((s) => s.activa == true);
+      } catch (e) {
+        _sesion = null;
+      }
+      notifyListeners();
+    });
+  }
+
+  void limpiarDatos() {
+    _subscription?.cancel();
+    _subscription = null;
+    _sesionesHistorial = [];
+    _sesion = null;
+    notifyListeners();
   }
 
   Future<void> aparcar(SesionAparcamiento sesion) async {

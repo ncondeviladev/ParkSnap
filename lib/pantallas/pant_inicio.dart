@@ -1,4 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -69,6 +71,9 @@ class PantallaInicio extends StatelessWidget {
                 icon: const Icon(Icons.logout, color: Colors.redAccent),
                 tooltip: "Cerrar Sesión",
                 onPressed: () async {
+                  provider.limpiarDatos();
+                  await GoogleSignIn()
+                      .signOut(); //Forzamos el nuevo login si hacemos logout
                   await FirebaseAuth.instance.signOut();
                   if (context.mounted) {
                     Navigator.pushReplacement(
@@ -167,32 +172,80 @@ class PantallaInicio extends StatelessWidget {
               ),
             ),
           ),
-          //Boton inteligente de red
-          floatingActionButton: StreamBuilder<List<ConnectivityResult>>(
-            stream: Connectivity().onConnectivityChanged,
-            builder: (context, snapshot) {
-              final resultados = snapshot.data ?? [];
-              bool tieneRed = resultados.any(
-                (red) => red != ConnectivityResult.none,
-              );
+          // Botones flotantes de alerta red y ubicacion
+          floatingActionButton: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              //Ubicacion
+              StreamBuilder<bool>(
+                stream: _locationStream(),
+                builder: (context, snapshot) {
+                  // No mostramos hasta asegurar si esta activado
+                  if (!snapshot.hasData || snapshot.data == true) {
+                    return const SizedBox.shrink();
+                  }
 
-              if (tieneRed) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: FloatingActionButton.extended(
+                      heroTag: "btnUbicacion",
+                      onPressed: () => AppSettings.openAppSettings(
+                        type: AppSettingsType.location,
+                      ),
+                      backgroundColor: Colors.orangeAccent,
+                      icon: const Icon(
+                        Icons.location_disabled,
+                        color: Colors.white,
+                      ),
+                      label: const Text(
+                        "ACTIVAR GPS",
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  );
+                },
+              ),
 
-              return FloatingActionButton.extended(
-                onPressed: () => AppSettings.openAppSettings(
-                  type: AppSettingsType.dataRoaming,
-                ),
-                backgroundColor: Colors.red,
-                icon: const Icon(Icons.wifi_off, color: Colors.white),
-                label: const Text(
-                  "SIN RED - ACTIVAR DATOS",
-                  style: TextStyle(color: Colors.white),
-                ),
-              );
-            },
+              //Red
+              StreamBuilder<List<ConnectivityResult>>(
+                stream: Connectivity().onConnectivityChanged,
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) return const SizedBox.shrink();
+
+                  final resultados = snapshot.data!;
+                  bool tieneRed = resultados.any(
+                    (red) => red != ConnectivityResult.none,
+                  );
+
+                  if (tieneRed) return const SizedBox.shrink();
+
+                  return FloatingActionButton.extended(
+                    heroTag: "btnRed",
+                    onPressed: () => AppSettings.openAppSettings(
+                      type: AppSettingsType.dataRoaming,
+                    ),
+                    backgroundColor: Colors.red,
+                    icon: const Icon(Icons.wifi_off, color: Colors.white),
+                    label: const Text(
+                      "SIN RED - ACTIVAR DATOS",
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
         );
       },
+    );
+  }
+
+  // Stream auxiliar para mezclar el estado inicial con los cambios
+  Stream<bool> _locationStream() async* {
+    yield await Geolocator.isLocationServiceEnabled();
+    yield* Geolocator.getServiceStatusStream().map(
+      (status) => status == ServiceStatus.enabled,
     );
   }
 }
